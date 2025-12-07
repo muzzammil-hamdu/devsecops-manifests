@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: netflix-app
+  namespace: argocd          # Argo CD is installed in this namespace
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/muzzammil-hamdu/devsecops-manifests.git'  # TODO: change if different
+    targetRevision: main
+    path: k8s/netflix
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: netflix
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
