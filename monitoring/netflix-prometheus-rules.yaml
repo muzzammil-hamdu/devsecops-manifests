@@ -1,0 +1,48 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: netflix-app-alerts
+  namespace: monitoring          # same namespace where prometheus is installed
+  labels:
+    release: prometheus          # 👈 IMPORTANT: must match your Helm release label
+spec:
+  groups:
+    - name: netflix-app.rules
+      rules:
+        # 1) App down (no available replicas)
+        - alert: NetflixAppDown
+          expr: kube_deployment_status_replicas_available{
+                  namespace="netflix",
+                  deployment="netflix-app"
+                } < 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Netflix app is down"
+            description: "Deployment netflix-app in namespace netflix has 0 available pods for more than 2 minutes."
+
+        # 2) High CPU usage for netflix pods
+        - alert: NetflixHighCPU
+          expr: |
+            sum(
+              rate(container_cpu_usage_seconds_total{
+                namespace="netflix",
+                pod=~"netflix-app-.*",
+                container!="POD"
+              }[5m])
+            )
+            /
+            sum(
+              kube_pod_container_resource_requests_cpu_cores{
+                namespace="netflix",
+                pod=~"netflix-app-.*"
+              }
+            )
+            > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage on Netflix app"
+            description: "Average CPU usage for netflix-app pods in namespace netflix is above 80% for 5 minutes."
