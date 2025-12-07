@@ -1,0 +1,183 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netflix-grafana-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  netflix-dashboard.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": "-- Grafana --",
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Running Pods in Namespace: netflix",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(kube_pod_status_phase{namespace=\"netflix\", phase=\"Running\"})",
+              "legendFormat": "running_pods"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"]
+            },
+            "orientation": "horizontal",
+            "textMode": "value"
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Available Replicas (Deployment: netflix-app)",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_deployment_status_replicas_available{namespace=\"netflix\",deployment=\"netflix-app\"}",
+              "legendFormat": "available_replicas"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"]
+            },
+            "orientation": "horizontal",
+            "textMode": "value"
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Firing Netflix Alerts",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(ALERTS{alertstate=\"firing\", alertname=~\"Netflix.*\"})",
+              "legendFormat": "firing_alerts"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"]
+            },
+            "orientation": "horizontal",
+            "textMode": "value"
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Pod CPU Usage (netflix-app pods)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"netflix\", pod=~\"netflix-app-.*\", container!=\"POD\"}[5m]))",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Pod Memory Usage (netflix-app pods)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"netflix\", pod=~\"netflix-app-.*\", container!=\"POD\"})",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "HPA Replicas (netflix-app-hpa)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"netflix\",horizontalpodautoscaler=\"netflix-app-hpa\"}",
+              "legendFormat": "current_replicas"
+            },
+            {
+              "refId": "B",
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"netflix\",horizontalpodautoscaler=\"netflix-app-hpa\"}",
+              "legendFormat": "desired_replicas"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Deployment Replicas (netflix-app)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "datasource": "${datasource}",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_deployment_status_replicas{namespace=\"netflix\",deployment=\"netflix-app\"}",
+              "legendFormat": "desired"
+            },
+            {
+              "refId": "B",
+              "expr": "kube_deployment_status_replicas_available{namespace=\"netflix\",deployment=\"netflix-app\"}",
+              "legendFormat": "available"
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": ["netflix", "devsecops", "aks"],
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "label": "Prometheus",
+            "query": "prometheus",
+            "current": {
+              "text": "Prometheus",
+              "value": "Prometheus"
+            }
+          }
+        ]
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "title": "Netflix Namespace - AKS / DevSecOps"
+    }
